@@ -4,27 +4,21 @@
 #include <windows.h>
 #include <algorithm>
 #include <filesystem>
+#include "cdd.h"
+#include "drives.h"
 
 namespace fs = std::filesystem;
 
 using namespace std;
 
-vector<char> drives() {
-    auto bit = bitset<32>(GetLogicalDrives());
-    string tmp = bit.to_string();
-    reverse(tmp.begin(), tmp.end());
-    vector<char> list = {};
-    for (int i = 0; i < 32; i++) {
-        if (tmp[i] == '1') list.push_back(static_cast<char>('A' + i));
-    }
-    return list;
-}
 
-vector<string> ls(const string& path) {
+//vector<string> cd
+
+vector<string> ls(const string &path) {
     vector<string> directories = {};
     try {
-        for (const auto &entry: fs::directory_iterator(path)) {
-
+        for (int j = 1; const auto &entry: fs::directory_iterator(path)) {
+            cout << j << ": " << entry.path() << endl;
             directories.push_back(entry.path().string());
         }
     }
@@ -50,8 +44,27 @@ void printDriveInfo(LPCSTR name) {
     cout << description[GetDriveTypeA(name)];
 }
 
-void printDriveInfoMore(LPWSTR name) {
+void printDriveInfoMore(vector<char> list, int b) {
+    char drive[4] = {list[b], ':', '\\', '\0'};
+    DWORD serialNumber;
+    char systemName[100];
+    bool flag = GetVolumeInformationA(drive, nullptr, 0, &serialNumber, nullptr, nullptr, systemName, 100);
+    DWORD sectorsPerCluster, bytesPerSector, numberOfFreeClusters, totalNumberOfClusters;
+    bool flag1 = GetDiskFreeSpaceA(drive, &sectorsPerCluster, &bytesPerSector, &numberOfFreeClusters,
+                                   &totalNumberOfClusters);
+    if (!flag || !flag1) {
+        cout << "can't get volume information or info about free space";
+    } else {
+        cout << endl << "serial number: " << serialNumber << endl;
+        cout << "system name: " << systemName << endl;
+        printDriveInfo(drive);
+        cout << endl;
+        cout << "sectors per cluster: " << sectorsPerCluster << endl;
+        cout << "bytes per sector: " << bytesPerSector << endl;
+        cout << "number of free clusters: " << numberOfFreeClusters << endl;
+        cout << "total number of clusters: " << totalNumberOfClusters << endl;
 
+    }
 
 }
 
@@ -66,15 +79,17 @@ void menu() {
     cout << "Enter number:";
     int a;
     cin >> a;
-    vector<char> list;
+
     switch (a) {
         case 1: {
+            vector<char> list;
             list = drives();
             for (char i: list) cout << i << ":\\" << endl;
             break;
         }
 
         case 2: {
+            vector<char> list;
             list = drives();
             cout << "Choose drive to see more info";
             for (int j = 1; char i: list) {
@@ -90,73 +105,17 @@ void menu() {
             }
             catch (const invalid_argument &e) {
                 cout << "invalid number";
+                return;
             }
+            printDriveInfoMore(list, b);
 
-            char drive[4] = {list[b], ':', '\\', '\0'};
-            DWORD serialNumber;
-            char systemName[100];
-            bool flag = GetVolumeInformationA(drive, nullptr, 0, &serialNumber, nullptr, nullptr, systemName, 100);
-            DWORD sectorsPerCluster, bytesPerSector, numberOfFreeClusters, totalNumberOfClusters;
-            bool flag1 = GetDiskFreeSpaceA(drive, &sectorsPerCluster, &bytesPerSector, &numberOfFreeClusters,
-                                           &totalNumberOfClusters);
-            if (!flag || !flag1) {
-                cout << "can't get volume information or info about free space";
-            } else {
-                cout << endl << "serial number: " << serialNumber << endl;
-                cout << "system name: " << systemName << endl;
-                printDriveInfo(drive);
-                cout << endl;
-                cout << "sectors per cluster: " << sectorsPerCluster << endl;
-                cout << "bytes per sector: " << bytesPerSector << endl;
-                cout << "number of free clusters: " << numberOfFreeClusters << endl;
-                cout << "total number of clusters: " << totalNumberOfClusters << endl;
-
-            }
         }
             break;
         case 3: {
-            list = drives();
-            cout << "Select drive to see it's contents";
-            for (int j = 1; char i: list) {
-                cout << endl << j << ": " << i << ":\\";
-                j++;
-            }
-            cout << endl << "Enter number: ";
-            string tmp;
-            cin >> tmp;
-            int b;
-            try {
-                b = stoi(tmp) - 1;
-            }
-            catch (const invalid_argument &e) {
-                cout << "invalid number";
-                return;
-            }
-            string path = {list[b], ':', '\\'};
-            vector<string> directories = ls(path);
-                cout<<"0: Create in this directory";
-            for(int j= 0; const string& str: directories){
-                cout<< j+1<<": "<<str<<endl;
-                j++;
-            }
-            cout << endl << "Enter number: ";
-            string tmp1;
-            cin >> tmp1;
-            int c;
-            try {
-                c = stoi(tmp) ;
-            }
-            catch (const invalid_argument &e) {
-                cout << "invalid number";
-                return;
-            }
-            vector<string> list1=ls(&list[c]);
-            for(int j= 0; const string& str: directories){
-                cout<< j+1<<": "<<str<<endl;
-                j++;
-            }
+            cdd();
             break;
         }
+
         default:
             cout << "you chose wrong number";
             break;
