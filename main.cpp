@@ -2,35 +2,15 @@
 #include <bitset>
 #include <vector>
 #include <windows.h>
-#include <algorithm>
-#include <filesystem>
+//#include <algorithm>
+#include "ls.h"
 #include "cdd.h"
 #include "drives.h"
+#include <filesystem>
 
 namespace fs = std::filesystem;
 
 using namespace std;
-
-
-//vector<string> cd
-
-vector<string> ls(const string &path) {
-    vector<string> directories = {};
-    try {
-        for (int j = 1; const auto &entry: fs::directory_iterator(path)) {
-            cout << j << ": " << entry.path() << endl;
-            directories.push_back(entry.path().string());
-        }
-    }
-    catch (const fs::filesystem_error &e) {
-        cout << "Filesystem error: " << e.what() << endl;
-
-    }
-    catch (const std::exception &e) {
-        cout << "An error occurred: " << e.what() << endl;
-    }
-    return directories;
-}
 
 void printDriveInfo(LPCSTR name) {
     string description[7];
@@ -111,9 +91,45 @@ void menu() {
 
         }
             break;
+//        case 3: {
+//            cdd();
+//            break;
+//        }
         case 3: {
-            cdd();
-            break;
+            cout << "what you want?";
+            cout << "1 - create directory\n";
+            cout << "2 - remove directory\n";
+            string mod;
+            cin >> mod;
+            for (auto c: mod) {
+                if (!isdigit(c)) {
+                    throw invalid_argument("it's not number");
+                }
+            }
+            CHAR path[100];
+            bool flag1;
+            int mod_int = stoi(mod);
+            if (mod_int == 1) {
+                cout << "Enter path to directory";
+                cin >> path;
+
+                flag1 = CreateDirectoryA(path, nullptr);
+                if (flag1) {
+                    cout << "success";
+                } else cout << "smth went wrong" << &GetLastError;
+            }
+            if (mod_int == 2) {
+                cout << "Enter path to directory";
+                cin >> path;
+                ls(path);
+                cout << "Enter path to directory remove directory";
+                flag1 = RemoveDirectoryA(path);
+                if (flag1) {
+                    cout << "success";
+                } else cout << "smth went wrong" << &GetLastError;
+
+
+            }
         }
 
         default:
